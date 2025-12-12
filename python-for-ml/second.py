@@ -1,1 +1,0 @@
-print("\nHello My Name is Mariam Gaber\n")
