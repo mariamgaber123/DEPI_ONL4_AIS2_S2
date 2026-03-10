@@ -1,11 +1,11 @@
 import os
 import pickle
 import tkinter as tk
-from tkinter import ttk
 import pandas as pd
 
-# --- Load the trained model ---
+# --- Load the trained model from pickle ---
 model_path = r'Amit\machine_learning\Projects\p1\model.pkl'
+
 if os.path.exists(model_path):
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
@@ -17,75 +17,134 @@ else:
 # --- GUI Setup ---
 root = tk.Tk()
 root.title("House Price Predictor")
-root.geometry("700x550")
-root.configure(bg="#e0f2f1")
+root.geometry("750x500")
+root.configure(bg="#f0f4f8")
 
 # Fonts
-label_font = ("Arial", 13, "bold")
-entry_font = ("Arial", 13)
-button_font = ("Arial", 13, "bold")
-result_font = ("Arial", 16, "bold")
+label_font = ("Helvetica", 16)
+entry_font = ("Helvetica", 16)
+button_font = ("Helvetica", 16, "bold")
 
-# --- Title ---
-title = tk.Label(root, text="🏠 House Price Predictor", font=("Arial", 20, "bold"), bg="#e0f2f1", fg="#00695c")
-title.pack(pady=15)
+# Main Frame
+frame = tk.Frame(root, bg="#f0f4f8", padx=30, pady=30)
+frame.pack(expand=True)
 
-# --- Frame for Inputs ---
-input_frame = tk.Frame(root, bg="#ffffff", bd=2, relief="ridge", padx=20, pady=20)
-input_frame.pack(pady=10, padx=20, fill="x")
+# --- Labels ---
+tk.Label(frame, text="Average Rooms (RM):",
+         font=label_font, bg="#f0f4f8").grid(row=0, column=0, padx=15, pady=15, sticky="e")
 
-# --- Labels & Entries with Cards ---
-tk.Label(input_frame, text="Average Rooms (RM):", font=label_font, bg="#ffffff").grid(row=0, column=0, sticky="w", pady=10)
-entry_rooms = tk.Entry(input_frame, font=entry_font, bd=2, relief="groove")
-entry_rooms.grid(row=0, column=1, pady=10, padx=10)
+tk.Label(frame, text="Poverty % (LSTAT):",
+         font=label_font, bg="#f0f4f8").grid(row=1, column=0, padx=15, pady=15, sticky="e")
 
-tk.Label(input_frame, text="Poverty % (LSTAT):", font=label_font, bg="#ffffff").grid(row=1, column=0, sticky="w", pady=10)
-entry_poverty = tk.Entry(input_frame, font=entry_font, bd=2, relief="groove")
-entry_poverty.grid(row=1, column=1, pady=10, padx=10)
+tk.Label(frame, text="Student-Teacher Ratio (PTRATIO):",
+         font=label_font, bg="#f0f4f8").grid(row=2, column=0, padx=15, pady=15, sticky="e")
 
-tk.Label(input_frame, text="Student-Teacher Ratio (PTRATIO):", font=label_font, bg="#ffffff").grid(row=2, column=0, sticky="w", pady=10)
-entry_student_teacher = tk.Entry(input_frame, font=entry_font, bd=2, relief="groove")
-entry_student_teacher.grid(row=2, column=1, pady=10, padx=10)
+# --- Entries ---
+entry_rooms = tk.Entry(frame, font=entry_font, bd=2, relief="groove")
+entry_poverty = tk.Entry(frame, font=entry_font, bd=2, relief="groove")
+entry_student_teacher = tk.Entry(frame, font=entry_font, bd=2, relief="groove")
 
-# --- Result Card ---
-result_frame = tk.Frame(root, bg="#b2dfdb", bd=2, relief="ridge", padx=20, pady=20)
-result_frame.pack(pady=15, padx=20, fill="x")
-label_result = tk.Label(result_frame, text=model_status, font=result_font, bg="#b2dfdb", fg="green" if model else "red")
-label_result.pack()
+entry_rooms.grid(row=0, column=1, padx=15, pady=15)
+entry_poverty.grid(row=1, column=1, padx=15, pady=15)
+entry_student_teacher.grid(row=2, column=1, padx=15, pady=15)
 
-# --- Functions ---
+# Result label
+label_result = tk.Label(
+    frame,
+    text=model_status,
+    fg="green" if model else "red",
+    font=("Helvetica", 16, "bold"),
+    bg="#f0f4f8"
+)
+label_result.grid(row=4, column=0, columnspan=2, pady=20)
+
+
+# --- Prediction Function ---
 def predict_price():
+
     if model is None:
         label_result.config(text="Model not loaded!", fg="red")
         return
+
+    rooms = entry_rooms.get()
+    poverty = entry_poverty.get()
+    stratio = entry_student_teacher.get()
+
+    if not rooms or not poverty or not stratio:
+        label_result.config(text="Enter all fields!", fg="red")
+        return
+
     try:
-        rooms = float(entry_rooms.get())
-        poverty = float(entry_poverty.get())
-        stratio = float(entry_student_teacher.get())
-        X_new = pd.DataFrame([[rooms, poverty, stratio]], columns=['RM','LSTAT','PTRATIO'])
+        rooms = float(rooms)
+        poverty = float(poverty)
+        stratio = float(stratio)
+
+        X_new = pd.DataFrame(
+            [[rooms, poverty, stratio]],
+            columns=['RM', 'LSTAT', 'PTRATIO']
+        )
+
         prediction = model.predict(X_new)[0]
-        label_result.config(text=f"Predicted House Price: ${prediction:,.2f}", fg="#004d40")
+
+        label_result.config(
+            text=f"Predicted House Price: ${prediction:,.2f}",
+            fg="#1f4e79"
+        )
+
     except ValueError:
-        label_result.config(text="Enter valid numbers!", fg="red")
+        label_result.config(text="Please enter valid numeric values!", fg="red")
+
     except Exception as e:
         label_result.config(text=f"Error: {e}", fg="red")
 
+
+# --- Reset Function ---
 def reset_fields():
     entry_rooms.delete(0, tk.END)
     entry_poverty.delete(0, tk.END)
     entry_student_teacher.delete(0, tk.END)
-    label_result.config(text=model_status, fg="green" if model else "red")
+
+    label_result.config(
+        text=model_status,
+        fg="green" if model else "red"
+    )
+
 
 # --- Buttons ---
-button_frame = tk.Frame(root, bg="#e0f2f1")
-button_frame.pack(pady=10)
+btn_predict = tk.Button(
+    frame,
+    text="Predict",
+    command=predict_price,
+    bg="#4caf50",
+    fg="white",
+    font=button_font,
+    activebackground="#45a049",
+    activeforeground="white",
+    bd=0,
+    padx=20,
+    pady=10
+)
 
-btn_predict = tk.Button(button_frame, text="Predict", command=predict_price, bg="#00796b", fg="white",
-                        font=button_font, activebackground="#004d40", activeforeground="white", bd=0, padx=20, pady=10)
-btn_predict.grid(row=0, column=0, padx=15)
+btn_predict.grid(row=3, column=0, columnspan=2, pady=15)
 
-btn_reset = tk.Button(button_frame, text="Reset", command=reset_fields, bg="#c62828", fg="white",
-                      font=button_font, activebackground="#8e0000", activeforeground="white", bd=0, padx=20, pady=10)
-btn_reset.grid(row=0, column=1, padx=15)
+btn_reset = tk.Button(
+    frame,
+    text="Refresh / Reset",
+    command=reset_fields,
+    bg="#f44336",
+    fg="white",
+    font=button_font,
+    activebackground="#e53935",
+    activeforeground="white",
+    bd=0,
+    padx=20,
+    pady=10
+)
+
+btn_reset.grid(row=5, column=0, columnspan=2, pady=15)
+
+# Grid spacing
+frame.grid_columnconfigure(0, weight=1)
+frame.grid_columnconfigure(1, weight=2)
 
 root.mainloop()
